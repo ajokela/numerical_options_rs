@@ -74,7 +74,7 @@ fn calculate_option_price_and_greeks(
 ///
 /// This function defines the name of the Python module and the functions exposed to Python.
 #[pymodule]
-fn numerical_options_rs(_py: Python, m: &PyModule) -> PyResult<()> {
+fn libnumerical_options_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calculate_option_price_and_greeks, m)?)?;
     Ok(())
 }

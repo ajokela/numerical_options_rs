@@ -78,18 +78,31 @@ impl BinomialLRWithGreeks {
         let ds = s_up - s_down;
         let dv = payoff_up - payoff_down;
 
+        // Calculate delta as the change in option value divided by the change in stock price
         let delta = dv / ds;
+
+        // Calculate gamma as the change in delta divided by the change in stock price
         let gamma = ((payoff_up - option_value) / ds_up - (option_value - payoff_down) / ds_down)
             / ((self.lr_option.tree.option.s0 + s_up) / 2.0 - (self.lr_option.tree.option.s0 + s_down) / 2.0);
 
-        let dt = self.lr_option.tree.option.t / self.lr_option.tree.option.n as f64;
-        let theta = (payoffs[1] - option_value) / dt;
+        let dt = 0.0001; // Small perturbation in time
+        let original_t = self.lr_option.tree.option.t;
+        self.lr_option.tree.option.t -= dt;
+        self.lr_option.setup_parameters();
+        let payoffs_theta = self.lr_option.tree.begin_tree_traversal();
+        let option_value_theta = payoffs_theta[payoffs_theta.len() / 2];
+        
+        // Calculate theta as the negative of the change in option value divided by the change in time
+        let theta = -(option_value_theta - option_value) / dt;
+        self.lr_option.tree.option.t = original_t;
 
         let dv = 0.01;
         self.lr_option.tree.option.sigma += dv;
         self.lr_option.setup_parameters();
         let payoffs_vega = self.lr_option.tree.begin_tree_traversal();
         let option_value_vega = payoffs_vega[payoffs_vega.len() / 2];
+        
+        // Calculate vega as the change in option value divided by the change in volatility
         let vega = (option_value_vega - option_value) / dv;
         self.lr_option.tree.option.sigma -= dv;
 
@@ -98,6 +111,8 @@ impl BinomialLRWithGreeks {
         self.lr_option.setup_parameters();
         let payoffs_rho = self.lr_option.tree.begin_tree_traversal();
         let option_value_rho = payoffs_rho[payoffs_rho.len() / 2];
+        
+        // Calculate rho as the change in option value divided by the change in interest rate
         let rho = (option_value_rho - option_value) / dr;
         self.lr_option.tree.option.r -= dr;
 
